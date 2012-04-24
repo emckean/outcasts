@@ -38,13 +38,17 @@ class Search
   end
   
   def favorites
-    # Reject the words with definitions! -- taking this out, since I'm okay with favorite words having dictionary definitions
-#    @favorites ||= @results.reject{|_| _.has_dictionary_def? }
-    @favorites ||= @results
+    @favorites = @results
+    self.favorites = self.favorites.map do |favorite|
+      response = Wordnik.word.get_word_forms(favorite, :useCanonical => 'true')
+      raise response
+      favorite = response['wordstring']
+      raise favorite
+    end
   end
   
   def favorites_as_request_object
-    favorites.map do |_|
+    results.map do |_|
       {'word' => _.word}
     end
   end
@@ -53,14 +57,14 @@ end
 
 class Result
   
-  attr_accessor :text, :word, :outcast
+  attr_accessor :text, :word, :favorite
   
   def initialize(text)
     self.text = text
     matches = self.text.scan(/\"?\'?([a-z|-]+)\"?\'? is my favorite word/i).flatten
-    self.word = matches.first.downcase unless matches.empty?
+    self.word = matches.first unless matches.empty?
   end
-  
+    
   def valid?
     word && word.size > 0
   end
@@ -68,6 +72,8 @@ class Result
   def has_dictionary_def?
     @has_dictionary_def ||= Wordnik.word.get_definitions(self.word, :limit => 1).size > 0
   end
+  
+
     
 end
 
